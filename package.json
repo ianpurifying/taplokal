@@ -6,7 +6,8 @@
     "dev": "next dev --turbo -p 4000",
     "build": "next build",
     "start": "next start -p 3003",
-    "lint": "next lint"
+    "lint": "next lint",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "firebase": "^10.13.2",
