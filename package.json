@@ -9,13 +9,16 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@humanwhocodes/config-array": "^0.13.0",
     "firebase": "^10.13.2",
+    "glob": "^11.0.0",
     "lottie-react": "^2.4.0",
     "next": "14.2.13",
     "react": "^18",
     "react-dom": "^18",
     "react-hot-toast": "^2.4.1",
     "react-select": "^5.8.1",
+    "rimraf": "^6.0.1",
     "sharp": "^0.33.5"
   },
   "devDependencies": {
