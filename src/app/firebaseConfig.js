@@ -3,14 +3,14 @@ import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
-// Your web app's Firebase configuration using environment variables
+// Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  apiKey: "AIzaSyCXpZnxZnxT8IFJOZhVsZOQ3fTjjZ6s2yw",
+  authDomain: "taplokal-9091d.firebaseapp.com",
+  projectId: "taplokal-9091d",
+  storageBucket: "taplokal-9091d.appspot.com",
+  messagingSenderId: "369614112829",
+  appId: "1:369614112829:web:5431f3732b6c86de114254"
 };
 
 // Initialize Firebase
