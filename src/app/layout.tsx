@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import "./globals.css";
+import "./styles/globals.css";
 import Nav from "./Nav";
 import Footer from "./Footer";
 import { Suspense } from "react";
@@ -15,12 +15,9 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-
   return (
     <html lang="en">
-      <body
-        className={`font-sans antialiased container mx-auto px-2 lg:px-10`}
-      >
+      <body className={`font-sans antialiased container mx-auto px-2 lg:px-10`}>
         <Suspense>
           <Toaster position="bottom-center" />
           <Nav />
