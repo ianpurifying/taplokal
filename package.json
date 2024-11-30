@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@humanwhocodes/config-array": "^0.13.0",
+    "critters": "^0.0.25",
     "firebase": "^10.13.2",
     "glob": "^11.0.0",
     "lottie-react": "^2.4.0",

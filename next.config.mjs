@@ -10,10 +10,11 @@ const nextConfig = {
   },
   webpack(config, { isServer }) {
     if (isServer) {
-      // If it's the server-side, we ensure some modules don't get bundled
-      config.externals = ["react", "react-dom"];
+      // Ensure React and ReactDOM are treated as external dependencies on the server
+      config.externals = config.externals || {};
+      config.externals["react"] = "react";
+      config.externals["react-dom"] = "react-dom";
     }
-
     return config;
   },
 };
