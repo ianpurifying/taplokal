@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import "./styles/globals.css";
+import "./globals.css";
 import Nav from "./Nav";
 import Footer from "./Footer";
 import { Suspense } from "react";
