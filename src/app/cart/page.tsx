@@ -21,6 +21,7 @@ import { onAuthStateChanged, User } from "firebase/auth";
 import toast from "react-hot-toast";
 import generateTransactionNumber from "../utils/generateTransactionNumber";
 import Select from "react-select";
+import Link from "next/link"; // Import for navigation
 
 interface Table {
   tableNumber: number;
@@ -216,6 +217,17 @@ const Page = () => {
       <h1 className="text-center mt-10 text-5xl font-bold text-black">
         ORDER BAG
       </h1>
+
+      {/* Category Redirect Button */}
+      <div className="flex justify-end mt-5">
+        <Link
+          href="/#categories"
+          className="bg-foreground text-white px-5 py-2 rounded-lg hover:bg-foreground/80"
+        >
+          Another Order
+        </Link>
+      </div>
+
       <div className="flex justify-between mt-5 items-center">
         <h2 className="text-lg lg:text-3xl font-bold uppercase">My Order</h2>
         <div className="bg-white drop-shadow-sm flex flex-row w-52 rounded-full overflow-hidden">
@@ -241,6 +253,8 @@ const Page = () => {
           </button>
         </div>
       </div>
+
+      {/* Other components remain unchanged */}
       {cartItems.map((item, index) => (
         <CartItem key={index} items={item} cartId={cartId} />
       ))}
@@ -250,7 +264,7 @@ const Page = () => {
             className="w-52"
             options={retrieveTableOptions().filter(
               (option) => option.value !== 0
-            )} // Exclude "Choose table" from options
+            )}
             onChange={(selectedOption) =>
               setTableNumber(selectedOption?.value || 0)
             }
