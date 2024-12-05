@@ -80,16 +80,37 @@ const Overlay = ({ onClose }: { onClose: () => void }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState<{
+    label: string;
+    color: string;
+  }>({
+    label: "Weak",
+    color: "text-red-500",
+  });
 
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
   const toggleConfirmPasswordVisibility = () =>
     setShowConfirmPassword(!showConfirmPassword);
 
   const validateFullName = (fullname: string) => /^[A-Za-z\s]+$/.test(fullname);
+  const validatePasswordStrength = (password: string) => {
+    if (password.length < 5) return { label: "Weak", color: "text-red-500" };
+    if (
+      /[A-Z]/.test(password) &&
+      /[0-9]/.test(password) &&
+      /[!@#$%^&*]/.test(password)
+    )
+      return { label: "Strong", color: "text-green-500" };
+    return { label: "Weak", color: "text-red-500" };
+  };
+
+  const handlePasswordChange = (password: string) => {
+    const strength = validatePasswordStrength(password);
+    setPasswordStrength(strength); // Pass both label and color
+  };
 
   const signUp = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
     const fullname = (e.target as HTMLFormElement).fullname.value.trim();
     const email = (e.target as HTMLFormElement).email.value.trim();
     const password = (e.target as HTMLFormElement).password.value;
@@ -113,7 +134,6 @@ const Overlay = ({ onClose }: { onClose: () => void }) => {
         await setDoc(doc(userRef, userCredential.user.uid), {
           name: fullname,
           email: email,
-          imageURL: userCredential.user.photoURL,
           role: "user",
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -142,112 +162,137 @@ const Overlay = ({ onClose }: { onClose: () => void }) => {
 
   return (
     <div className="fixed inset-0 z-10 bg-black bg-opacity-50 flex items-center justify-center">
-      <div className="bg-white flex flex-col p-8 rounded-lg w-96 relative">
-        <button onClick={onClose} className="absolute top-2 right-4">
-          x
+      <div className="bg-white shadow-lg flex flex-col p-6 rounded-xl w-full max-w-md relative">
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-gray-500 hover:text-gray-800"
+        >
+          ✕
         </button>
         {isLogin ? (
-          <form onSubmit={signIn} className="flex flex-col">
-            <h2 className="text-2xl text-center font-bold mb-4">Login</h2>
-            <label>Email</label>
-            <input
-              className="border p-2 mb-2"
-              name="email"
-              type="text"
-              placeholder="Enter email address"
-              required
-            />
-            <label>Password</label>
-            <div className="relative">
+          <form onSubmit={signIn} className="space-y-4">
+            <h2 className="text-2xl font-bold text-center">Login</h2>
+            <div>
+              <label className="block mb-1 font-medium">Email</label>
               <input
-                className="border p-2 mb-2 w-full"
-                name="password"
-                type={showPassword ? "text" : "password"}
-                placeholder="Enter password"
+                className="border border-gray-300 w-full p-2 rounded-md focus:ring focus:ring-blue-300"
+                name="email"
+                type="email"
+                placeholder="Enter email address"
                 required
               />
-              <button
-                type="button"
-                onClick={togglePasswordVisibility}
-                className="absolute right-2 top-3 text-gray-600"
-              >
-                {showPassword ? "Hide" : "Show"}
-              </button>
             </div>
-            <button className="py-2 mt-5 text-center w-full bg-foreground text-white">
+            <div>
+              <label className="block mb-1 font-medium">Password</label>
+              <div className="relative">
+                <input
+                  className="border border-gray-300 w-full p-2 rounded-md focus:ring focus:ring-blue-300"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Enter password"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={togglePasswordVisibility}
+                  className="absolute right-2 top-2 text-gray-500 hover:text-gray-800"
+                >
+                  {showPassword ? "Hide" : "Show"}
+                </button>
+              </div>
+            </div>
+            <button className="bg-foreground text-white py-2 rounded-md w-full hover:bg-foreground/60">
               Sign In
             </button>
-            <p className="mt-2 text-center text-sm">
-              Don&apos;t have an account?{" "}
-              <strong className="cursor-pointer">
-                <u onClick={() => setIsLogin(false)}>Sign up</u>
-              </strong>
+            <p className="text-sm text-center">
+              Don’t have an account?{" "}
+              <span
+                className="text-foreground cursor-pointer hover:underline"
+                onClick={() => setIsLogin(false)}
+              >
+                Sign up
+              </span>
             </p>
           </form>
         ) : (
-          <form onSubmit={signUp} className="flex flex-col">
-            <h2 className="text-2xl text-center font-bold mb-4">Sign Up</h2>
-            <label>Full Name</label>
-            <input
-              className="border p-2 mb-2"
-              type="text"
-              name="fullname"
-              placeholder="Enter full name"
-              required
-            />
-            <label>Email</label>
-            <input
-              className="border p-2 mb-2"
-              name="email"
-              type="text"
-              placeholder="Enter email address"
-              required
-            />
-            <label>Password</label>
-            <div className="relative">
+          <form onSubmit={signUp} className="space-y-4">
+            <h2 className="text-2xl font-bold text-center">Sign Up</h2>
+            <div>
+              <label className="block mb-1 font-medium">Full Name</label>
               <input
-                className="border p-2 mb-2 w-full"
-                name="password"
-                type={showPassword ? "text" : "password"}
-                placeholder="Enter password"
+                className="border border-gray-300 w-full p-2 rounded-md focus:ring focus:ring-blue-300"
+                type="text"
+                name="fullname"
+                placeholder="Enter full name"
                 required
               />
-              <button
-                type="button"
-                onClick={togglePasswordVisibility}
-                className="absolute right-2 top-3 text-gray-600"
-              >
-                {showPassword ? "Hide" : "Show"}
-              </button>
             </div>
-            <label>Confirm Password</label>
-            <div className="relative">
+            <div>
+              <label className="block mb-1 font-medium">Email</label>
               <input
-                className="border p-2 mb-2 w-full"
-                name="confirmPassword"
-                type={showConfirmPassword ? "text" : "password"}
-                placeholder="Confirm password"
+                className="border border-gray-300 w-full p-2 rounded-md focus:ring focus:ring-blue-300"
+                name="email"
+                type="email"
+                placeholder="Enter email address"
                 required
               />
-              <button
-                type="button"
-                onClick={toggleConfirmPasswordVisibility}
-                className="absolute right-2 top-3 text-gray-600"
-              >
-                {showConfirmPassword ? "Hide" : "Show"}
-              </button>
             </div>
-            <button
-              type="submit"
-              className="py-2 mt-5 text-center w-full bg-foreground text-white"
-            >
+            <div>
+              <label className="block mb-1 font-medium">Password</label>
+              <div className="relative">
+                <input
+                  className="border border-gray-300 w-full p-2 rounded-md focus:ring focus:ring-blue-300"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Enter password"
+                  required
+                  onChange={(e) => handlePasswordChange(e.target.value)}
+                />
+                <button
+                  type="button"
+                  onClick={togglePasswordVisibility}
+                  className="absolute right-2 top-2 text-gray-500 hover:text-gray-800"
+                >
+                  {showPassword ? "Hide" : "Show"}
+                </button>
+              </div>
+              {passwordStrength && (
+                <p className={`mt-1 text-sm ${passwordStrength.color}`}>
+                  Password strength: {passwordStrength.label}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label className="block mb-1 font-medium">Confirm Password</label>
+              <div className="relative">
+                <input
+                  className="border border-gray-300 w-full p-2 rounded-md focus:ring focus:ring-blue-300"
+                  name="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  placeholder="Confirm password"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={toggleConfirmPasswordVisibility}
+                  className="absolute right-2 top-2 text-gray-500 hover:text-gray-800"
+                >
+                  {showConfirmPassword ? "Hide" : "Show"}
+                </button>
+              </div>
+            </div>
+            <button className="bg-foreground text-white py-2 rounded-md w-full hover:bg-foreground/60">
               Sign Up
             </button>
-            <p className="mt-2 text-center text-sm">
+            <p className="text-sm text-center">
               Already have an account?{" "}
-              <strong className="cursor-pointer">
-                <u onClick={() => setIsLogin(true)}>Sign in</u>
-              </strong>
+              <span
+                className="text-foreground cursor-pointer hover:underline"
+                onClick={() => setIsLogin(true)}
+              >
+                Sign in
+              </span>
             </p>
           </form>
         )}
