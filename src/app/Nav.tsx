@@ -308,6 +308,7 @@ const Nav = () => {
   const [user, setUser] = useState<User | null>(null);
   const [cartItemCount, setCartItemCount] = useState(0);
   const [searchResults, setSearchResults] = useState<Item[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const toggleOverlay = () => {
     setOverlayVisible(!isOverlayVisible);
@@ -317,6 +318,7 @@ const Nav = () => {
     setDropdownVisible(!isDropdownVisible);
   };
 
+  // Listen for authentication state
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) =>
       setUser(currentUser)
@@ -324,10 +326,11 @@ const Nav = () => {
     return () => unsubscribe();
   }, []);
 
+  // Update cart item count
   useEffect(() => {
     let unsubscribe = () => {};
 
-    if (user != null) {
+    if (user) {
       const cartsCollectionRef = collection(fs, "carts");
 
       const q = query(
@@ -342,8 +345,7 @@ const Nav = () => {
           if (!querySnapshot.empty) {
             const cartDoc = querySnapshot.docs[0];
             const items = cartDoc.data().items || [];
-
-            const totalQuantity: number = items.reduce(
+            const totalQuantity = items.reduce(
               (acc: number, item: { quantity: number }) => acc + item.quantity,
               0
             );
@@ -352,9 +354,7 @@ const Nav = () => {
             setCartItemCount(0);
           }
         },
-        (error) => {
-          console.error("Error fetching cart item count: ", error);
-        }
+        (error) => console.error("Error fetching cart item count: ", error)
       );
     } else {
       setCartItemCount(0);
@@ -363,11 +363,13 @@ const Nav = () => {
     return () => unsubscribe();
   }, [user]);
 
+  // Display notifications
   useEffect(() => {
     let unsubscribe = () => {};
 
-    if (user != null) {
+    if (user) {
       const usersRef = doc(fs, "users", user.uid);
+
       unsubscribe = onSnapshot(usersRef, (doc) => {
         if (doc.exists()) {
           const data = doc.data();
@@ -378,20 +380,19 @@ const Nav = () => {
             boolean
           ] = data.notification || ["", "", "warning", true];
           const [title, message, type, shown] = notification;
-          if (shown) return;
 
-          toast(message, {
-            duration: 5000,
-            icon: icon[type],
-          });
+          if (!shown) {
+            toast(message, {
+              duration: 5000,
+              icon: icon[type],
+            });
 
-          setDoc(
-            usersRef,
-            {
-              notification: [title, message, type, true],
-            },
-            { merge: true }
-          );
+            setDoc(
+              usersRef,
+              { notification: [title, message, type, true] },
+              { merge: true }
+            );
+          }
         }
       });
     }
@@ -399,49 +400,57 @@ const Nav = () => {
     return () => unsubscribe();
   }, [user]);
 
+  // Handle search functionality
+  const handleSearch = (e: React.FormEvent<HTMLInputElement>) => {
+    const queryText = (e.target as HTMLInputElement).value;
+    setSearchQuery(queryText);
+
+    if (queryText.trim() === "") {
+      setSearchResults([]);
+      return;
+    }
+
+    const menuCollectionRef = collection(fs, "menu");
+
+    const unsubscribe = onSnapshot(
+      menuCollectionRef,
+      (querySnapshot) => {
+        const allItems = querySnapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            sold: data.sold,
+            name: data.name,
+            description: data.description,
+            price: data.price,
+            imageURL: data.imageURL,
+          } as Item;
+        });
+
+        const filteredResults = allItems
+          .filter((item) =>
+            item.name.toLowerCase().includes(queryText.toLowerCase())
+          )
+          .slice(0, 5);
+
+        setSearchResults(filteredResults);
+      },
+      (error) => console.error("Error fetching menu items: ", error)
+    );
+
+    return () => unsubscribe();
+  };
+
+  // Reset search results on navigation or search input clearing
+  useEffect(() => {
+    if (searchQuery.trim() === "") {
+      setSearchResults([]);
+    }
+  }, [pathname, searchQuery]);
+
   const checkCart = () => {
     if (cartItemCount === 0) {
       toast.error("Your cart is empty");
-    }
-  };
-
-  const handleSearch = async (e: React.FormEvent<HTMLInputElement>) => {
-    const queryText = (e.target as HTMLInputElement).value;
-
-    if (queryText.trim() !== "") {
-      const menuCollectionRef = collection(fs, "menu");
-
-      const unsubscribe = onSnapshot(
-        menuCollectionRef,
-        (querySnapshot) => {
-          const allItems = querySnapshot.docs.map((doc) => {
-            const data = doc.data();
-            return {
-              id: doc.id,
-              sold: data.sold,
-              name: data.name,
-              description: data.description,
-              price: data.price,
-              imageURL: data.imageURL,
-            } as Item;
-          });
-
-          const filteredResults = allItems
-            .filter((item) =>
-              item.name.toLowerCase().includes(queryText.toLowerCase())
-            )
-            .slice(0, 5);
-
-          setSearchResults(filteredResults);
-        },
-        (error) => {
-          console.error("Error fetching menu items: ", error);
-        }
-      );
-
-      return () => unsubscribe();
-    } else {
-      setSearchResults([]);
     }
   };
 
@@ -511,6 +520,7 @@ const Nav = () => {
             <div className="bg-background text-foreground p-2 rounded-lg flex border">
               <input
                 type="text"
+                value={searchQuery}
                 placeholder="Search here"
                 onInput={handleSearch}
                 className="outline-none w-28 lg:w-full"
@@ -530,6 +540,8 @@ const Nav = () => {
                 />
               </svg>
             </div>
+
+            {/* User dropdown or login overlay */}
             <div
               className="p-2 bg-background text-foreground rounded-lg border cursor-pointer"
               onClick={user ? toggleDropdown : toggleOverlay}
@@ -549,9 +561,13 @@ const Nav = () => {
                 />
               </svg>
             </div>
+
+            {/* User dropdown menu */}
             {isDropdownVisible && user && (
               <UserDropdown onClose={toggleDropdown} />
             )}
+
+            {/* Search results dropdown */}
             {searchResults.length > 0 && (
               <div className="flex flex-col items-center py-2 px-1 lg:py-4 lg:px-2 absolute left-0 lg:top-10 top-16 w-full bg-white border rounded-lg shadow-lg z-20">
                 {searchResults.map((searchResult, index) => (
