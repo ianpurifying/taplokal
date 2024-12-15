@@ -4,9 +4,25 @@ import ramen from "./images/ramen2.png";
 import Category from "./components/Category";
 import Popular from "./components/Popular";
 import { useEffect, useState } from "react";
-import { collection, getDocs, limit, orderBy, query } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  limit,
+  orderBy,
+  query,
+  setDoc,
+  doc,
+} from "firebase/firestore";
 import { Item } from "./Types";
-import { fs } from "./firebaseConfig";
+import { auth, fs } from "./firebaseConfig";
+import {
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  updateProfile,
+} from "firebase/auth";
+import { toast } from "react-hot-toast";
+import { User } from "firebase/auth";
 
 const servicesItems = [
   {
@@ -125,9 +141,107 @@ const servicesItems = [
   },
 ];
 
+// Validation for Full Name (only letters allowed)
+const validateFullName = (fullname: string) => /^[A-Za-z\s]+$/.test(fullname);
+
+// Validate password strength
+const validatePasswordStrength = (password: string) => {
+  if (password.length < 5) return { label: "Weak", color: "text-red-500" };
+  if (
+    /[A-Z]/.test(password) &&
+    /[0-9]/.test(password) &&
+    /[!@#$%^&*]/.test(password)
+  )
+    return { label: "Strong", color: "text-green-500" };
+  return { label: "Weak", color: "text-red-500" };
+};
+
+// Handle password change and update password strength
+const handlePasswordChange = (
+  password: string,
+  setPasswordStrength: React.Dispatch<
+    React.SetStateAction<{ label: string; color: string }>
+  >
+) => {
+  const strength = validatePasswordStrength(password);
+  setPasswordStrength(strength);
+};
+
 export default function Home() {
   const [popularItems, setPopularItems] = useState<Array<Item>>([]);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState<{
+    label: string;
+    color: string;
+  }>({
+    label: "Weak",
+    color: "text-red-500",
+  });
+  const [user, setUser] = useState<User | null>(null);
+  const [showLoginForm, setShowLoginForm] = useState(false);
+  const [isLogin, setIsLogin] = useState(true);
 
+  const togglePasswordVisibility = () => setShowPassword(!showPassword);
+  const toggleConfirmPasswordVisibility = () =>
+    setShowConfirmPassword(!showConfirmPassword);
+
+  /// Handle sign in
+  const signIn = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const email = (e.target as HTMLFormElement).email.value.trim();
+    const password = (e.target as HTMLFormElement).password.value;
+
+    signInWithEmailAndPassword(auth, email, password)
+      .then(() => {
+        toast.success("Login successful! Welcome back.");
+        setShowLoginForm(false); // Close form after successful login
+      })
+      .catch(() => {
+        toast.error("Invalid email or password.");
+      });
+  };
+
+  // Handle sign up
+  const signUp = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const fullname = (e.target as HTMLFormElement).fullname.value.trim();
+    const email = (e.target as HTMLFormElement).email.value.trim();
+    const password = (e.target as HTMLFormElement).password.value;
+    const confirmPassword = (e.target as HTMLFormElement).confirmPassword.value;
+    // Validation
+    if (!validateFullName(fullname)) {
+      toast.error("Full Name must only contain letters.");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      toast.error("Passwords do not match.");
+      return;
+    }
+
+    createUserWithEmailAndPassword(auth, email, password)
+      .then(async (userCredential) => {
+        await updateProfile(userCredential.user, { displayName: fullname });
+
+        const userRef = collection(fs, "users");
+        await setDoc(doc(userRef, userCredential.user.uid), {
+          name: fullname,
+          email: email,
+          role: "user",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+
+        toast.success("Sign-up successful!");
+        setShowLoginForm(false); // Close form after successful sign-up
+      })
+      .catch((error) => {
+        toast.error("Error signing up: " + error.message);
+      });
+  };
+
+  // Fetch popular items
   const fetchData = async () => {
     const menuCollection = collection(fs, "menu");
     const querySnapshot = await getDocs(
@@ -150,8 +264,32 @@ export default function Home() {
 
   useEffect(() => {
     fetchData();
+
+    // Listen for authentication state changes
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser); // Update user state
+    });
+
+    // Cleanup the listener when component unmounts
+    return () => unsubscribe();
   }, []);
 
+  /// Show Order Now button if user is logged in
+  const loginButton = user ? (
+    <a
+      href="/#categories"
+      className="w-max py-2 px-8 bg-foreground hover:bg-foreground/60 rounded-xl text-white"
+    >
+      Order Now
+    </a>
+  ) : (
+    <button
+      onClick={() => setShowLoginForm(true)} // Show the login form when clicked
+      className="w-max py-2 px-8 bg-foreground hover:bg-foreground/60 rounded-xl text-white"
+    >
+      Log In
+    </button>
+  );
   return (
     <div className="py-10 lg:py-20">
       <main className="mt-10 flex lg:flex-row flex-col-reverse items-center">
@@ -164,19 +302,166 @@ export default function Home() {
             Delicious Meals, Just a Click Away – Order Now for Flavorful and
             Convenient Dining!
           </p>
-          <a
-            href="/#categories"
-            className="w-max py-2 px-8 bg-foreground hover:bg-foreground/60 rounded-xl text-white"
-          >
-            Order Now
-          </a>
+
+          {/* Show the appropriate button */}
+          {loginButton}
+
+          {/* Show Login or Sign Up Form based on isLogin state */}
+          {showLoginForm && (
+            <div className="fixed inset-0 z-10 bg-black bg-opacity-50 flex items-center justify-center">
+              <div className="bg-white shadow-lg flex flex-col p-6 rounded-xl w-full max-w-md relative">
+                {isLogin ? (
+                  <form onSubmit={signIn} className="space-y-4">
+                    <h2 className="text-2xl font-bold text-center">Login</h2>
+                    <div>
+                      <label className="block mb-1 font-medium">Email</label>
+                      <input
+                        className="border border-gray-300 w-full p-2 rounded-md focus:ring focus:ring-blue-300"
+                        name="email"
+                        type="email"
+                        placeholder="Enter email address"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block mb-1 font-medium">Password</label>
+                      <div className="relative">
+                        <input
+                          className="border border-gray-300 w-full p-2 rounded-md focus:ring focus:ring-blue-300"
+                          name="password"
+                          type={showPassword ? "text" : "password"}
+                          placeholder="Enter password"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={togglePasswordVisibility}
+                          className="absolute right-2 top-2 text-gray-500 hover:text-gray-800"
+                        >
+                          {showPassword ? "Hide" : "Show"}
+                        </button>
+                      </div>
+                    </div>
+                    <button className="bg-foreground text-white py-2 rounded-md w-full hover:bg-foreground/60">
+                      Sign In
+                    </button>
+                    <p className="text-sm text-center">
+                      Don’t have an account?{" "}
+                      <span
+                        className="text-foreground cursor-pointer hover:underline"
+                        onClick={() => {
+                          setIsLogin(false); // Switch to Sign Up form
+                        }}
+                      >
+                        Sign up
+                      </span>
+                    </p>
+                  </form>
+                ) : (
+                  <form onSubmit={signUp} className="space-y-4">
+                    <h2 className="text-2xl font-bold text-center">Sign Up</h2>
+                    <div>
+                      <label className="block mb-1 font-medium">
+                        Full Name
+                      </label>
+                      <input
+                        className="border border-gray-300 w-full p-2 rounded-md focus:ring focus:ring-blue-300"
+                        type="text"
+                        name="fullname"
+                        placeholder="Enter full name"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block mb-1 font-medium">Email</label>
+                      <input
+                        className="border border-gray-300 w-full p-2 rounded-md focus:ring focus:ring-blue-300"
+                        name="email"
+                        type="email"
+                        placeholder="Enter email address"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block mb-1 font-medium">Password</label>
+                      <div className="relative">
+                        <input
+                          className="border border-gray-300 w-full p-2 rounded-md focus:ring focus:ring-blue-300"
+                          name="password"
+                          type={showPassword ? "text" : "password"}
+                          placeholder="Enter password"
+                          required
+                          onChange={(e) =>
+                            handlePasswordChange(
+                              e.target.value,
+                              setPasswordStrength
+                            )
+                          }
+                        />
+                        <button
+                          type="button"
+                          onClick={togglePasswordVisibility}
+                          className="absolute right-2 top-2 text-gray-500 hover:text-gray-800"
+                        >
+                          {showPassword ? "Hide" : "Show"}
+                        </button>
+                      </div>
+                      {passwordStrength && (
+                        <p className={`mt-1 text-sm ${passwordStrength.color}`}>
+                          Password strength: {passwordStrength.label}
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block mb-1 font-medium">
+                        Confirm Password
+                      </label>
+                      <div className="relative">
+                        <input
+                          className="border border-gray-300 w-full p-2 rounded-md focus:ring focus:ring-blue-300"
+                          name="confirmPassword"
+                          type={showConfirmPassword ? "text" : "password"}
+                          placeholder="Confirm password"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={toggleConfirmPasswordVisibility}
+                          className="absolute right-2 top-2 text-gray-500 hover:text-gray-800"
+                        >
+                          {showConfirmPassword ? "Hide" : "Show"}
+                        </button>
+                      </div>
+                    </div>
+                    <button className="bg-foreground text-white py-2 rounded-md w-full hover:bg-foreground/60">
+                      Sign Up
+                    </button>
+                    <p className="text-sm text-center">
+                      Already have an account?{" "}
+                      <span
+                        className="text-foreground cursor-pointer hover:underline"
+                        onClick={() => {
+                          setIsLogin(true); // Switch to Login form
+                        }}
+                      >
+                        Sign in
+                      </span>
+                    </p>
+                  </form>
+                )}
+                <button
+                  onClick={() => setShowLoginForm(false)} // Close form when clicking outside
+                  className="absolute top-4 right-4 text-gray-500 hover:text-gray-800"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          )}
         </div>
-        <div className="lg:w-2/5 p-0">
-          <Image
-            className="w-full h-full drop-shadow-2xl"
-            src={ramen}
-            alt="logo"
-          />
+        <div className="lg:w-2/5 w-full lg:pl-10">
+          <Image src={ramen} alt="ramen" className="rounded-xl object-cover" />
         </div>
       </main>
       <section id="categories" className="mt-10 pt-10 lg:mt-20">

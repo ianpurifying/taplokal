@@ -486,6 +486,15 @@ const Nav = () => {
             >
               <Link href={"/#categories"}>Browse menu</Link>
             </li>
+            <li
+              className={`cursor-pointer ${
+                pathname == "/order-history"
+                  ? "font-semibold"
+                  : "hover:font-semibold"
+              }`}
+            >
+              <Link href={"/order-history"}>Order History</Link>
+            </li>
           </ul>
           <li
             className={`cursor-pointer flex p-2 relative ${
