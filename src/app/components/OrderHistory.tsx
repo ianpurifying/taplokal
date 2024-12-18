@@ -137,7 +137,7 @@ const OrderHistory: React.FC = () => {
                       <span className="font-medium">{item.name}</span> x{" "}
                       {item.quantity}
                     </div>
-                    <span>${(item.price * item.quantity).toFixed(2)}</span>
+                    <span>₱{(item.price * item.quantity).toFixed(2)}</span>
                   </li>
                 ))}
               </ul>
