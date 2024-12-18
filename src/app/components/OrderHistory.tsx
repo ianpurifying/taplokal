@@ -146,11 +146,11 @@ const OrderHistory: React.FC = () => {
               <div className="flex justify-end mt-4 text-gray-800">
                 {order.totalDiscount && (
                   <p className="text-sm line-through mr-4">
-                    ${order.totalDiscount.toFixed(2)}
+                    ₱{order.totalDiscount.toFixed(2)}
                   </p>
                 )}
                 <p className="font-semibold">
-                  {/* Calculate total price here */}Total:{" "}
+                  {/* Calculate total price here */}Total: ₱
                   {order.items
                     .reduce((sum, item) => sum + item.price * item.quantity, 0)
                     .toFixed(2)}
