@@ -1,45 +1,167 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { getAuth, User } from "firebase/auth";
+import { fs } from "../firebaseConfig";
+import { CartDetails, ItemCart } from "../Types";
 
-interface OrderHistoryProps {
-  customerId: string; // You pass this prop to identify the customer
-}
+const OrderHistory: React.FC = () => {
+  const [orders, setOrders] = useState<CartDetails[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(null); // Explicitly type the user state
 
-const OrderHistory: React.FC<OrderHistoryProps> = () => {
-  return (
-    <div className="order-history-container">
-      <div className="flex items-center justify-center">
-        <h1 className="text-[7vw]">
-          UNDER CONSTRUCTION{" "}
-          <svg
-            className="w-80 h-80"
-            viewBox="0 0 200 200"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              className="fill-white"
-              d="M180.77,164a11.28,11.28,0,0,1-10.82,8H30a11.33,11.33,0,0,1-9.81-17l70-121.16a11.32,11.32,0,0,1,19.62,0l70,121.16A11.15,11.15,0,0,1,180.77,164Z"
-            />
-            <path
-              className="fill-yellow-400"
-              d="M180.77,164H36.07c-8.72,0-5.17-9.44-.81-17l68.3-118.3a11.2,11.2,0,0,1,6.25,5.1l70,121.16A11.15,11.15,0,0,1,180.77,164Z"
-            />
-            <path
-              className="fill-blue-800"
-              d="M101.69,139.57q-2.92-.07-5.84,0A4.72,4.72,0,0,1,91,135.15l-3.7-58.79a4.74,4.74,0,0,1,4.55-5q6.9-.25,13.81,0a4.74,4.74,0,0,1,4.55,5l-3.7,58.79A4.72,4.72,0,0,1,101.69,139.57Z"
-            />
-            <path
-              className="fill-blue-800"
-              d="M105.62,149.69a6.88,6.88,0,0,1-13.69,0c-0.27-3.54,2.8-6.66,6.84-6.66S105.88,146.15,105.62,149.69Z"
-            />
-            <path
-              className="fill-none stroke-blue-800 stroke-6 stroke-linecap-round stroke-linejoin-round"
-              d="M20.23,154.92l70-121.16a11.33,11.33,0,0,1,19.63,0l70,121.16a11.33,11.33,0,0,1-9.81,17H30A11.33,11.33,0,0,1,20.23,154.92Z"
-            />
-          </svg>
-        </h1>
+  // Fetch the user on component mount
+  useEffect(() => {
+    const auth = getAuth();
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setUser(user); // Now this correctly sets `User | null`
+    });
+    return () => unsubscribe(); // Cleanup on component unmount
+  }, []);
+
+  // Fetch orders when the user is authenticated
+  useEffect(() => {
+    if (!user) {
+      setLoading(false);
+      setOrders([]); // Reset orders when no user is authenticated
+      return;
+    }
+
+    const fetchOrders = async () => {
+      try {
+        const checkoutsRef = collection(fs, "checkouts");
+        const q = query(checkoutsRef, where("customerId", "==", user.uid));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+          console.log("No orders found for this user.");
+          setOrders([]);
+        } else {
+          const fetchedOrders: CartDetails[] = querySnapshot.docs.map((doc) => {
+            const data = doc.data();
+            return {
+              id: doc.id, // Now part of CartDetails
+              cartId: data.cartId,
+              customerId: data.customerId,
+              orderNumber: data.orderNumber,
+              transactionNumber: data.transactionNumber,
+              dineInOrTakeout: data.dineInOrTakeout,
+              items: data.items,
+              status: data.status,
+              tableNumber: data.tableNumber,
+              branch: data.branch,
+              createdAt: data.createdAt, // Assuming createdAt is a Timestamp
+              totalDiscount: data.totalDiscount, // Optional field
+            };
+          });
+
+          // Sort orders by `createdAt` in descending order
+          fetchedOrders.sort((a, b) => {
+            const dateA = a.createdAt ? a.createdAt.toDate() : new Date(0);
+            const dateB = b.createdAt ? b.createdAt.toDate() : new Date(0);
+            return dateB.getTime() - dateA.getTime();
+          });
+
+          setOrders(fetchedOrders);
+        }
+      } catch (error) {
+        console.error("Error fetching orders:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrders();
+  }, [user]); // Re-fetch when the user changes
+
+  if (loading) {
+    return (
+      <div className="text-center text-lg text-gray-750 pb-[650px]">
+        <h2 className="text-2xl md:text-3xl font-bold text-center text-foreground-primary mb-6">
+          Your Order History
+        </h2>
+        Loading your order history...
       </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto p-4">
+      <h2 className="text-2xl md:text-3xl font-bold text-center text-foreground-primary mb-6">
+        Your Order History
+      </h2>
+
+      {orders.length > 0 ? (
+        <ul className="space-y-4">
+          {orders.map((order) => (
+            <li
+              key={order.id}
+              className="bg-white rounded-lg shadow-md p-4 md:p-6"
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg md:text-xl font-semibold text-gray-800">
+                  Order ID: {order.id}
+                </h3>
+                <p>
+                  <span className="font-medium">Status:</span> {order.status}
+                </p>
+              </div>
+
+              <div className="text-gray-700 mb-4">
+                <p>
+                  <span className="font-medium">Date:</span>{" "}
+                  {order.createdAt
+                    ? new Date(order.createdAt.toDate()).toLocaleString()
+                    : "Invalid Date"}
+                </p>
+                <p>
+                  <span className="font-medium">
+                    Order No: {order.orderNumber}
+                  </span>
+                </p>
+
+                <p>
+                  <span className="font-medium">Table:</span>{" "}
+                  {order.tableNumber}
+                </p>
+                <span className="text-sm md:text-base text-gray-600">
+                  {order.dineInOrTakeout}
+                </span>
+              </div>
+
+              <ul className="border-t border-gray-200 pt-4 space-y-2">
+                {order.items.map((item: ItemCart, index: number) => (
+                  <li key={index} className="flex justify-between">
+                    <div>
+                      <span className="font-medium">{item.name}</span> x{" "}
+                      {item.quantity}
+                    </div>
+                    <span>${(item.price * item.quantity).toFixed(2)}</span>
+                  </li>
+                ))}
+              </ul>
+
+              {/* Optional: Display total price and discount */}
+              <div className="flex justify-end mt-4 text-gray-800">
+                {order.totalDiscount && (
+                  <p className="text-sm line-through mr-4">
+                    ${order.totalDiscount.toFixed(2)}
+                  </p>
+                )}
+                <p className="font-semibold">
+                  {/* Calculate total price here */}Total:{" "}
+                  {order.items
+                    .reduce((sum, item) => sum + item.price * item.quantity, 0)
+                    .toFixed(2)}
+                </p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-center text-gray-500 pb-[600px]">No orders found.</p>
+      )}
     </div>
   );
 };

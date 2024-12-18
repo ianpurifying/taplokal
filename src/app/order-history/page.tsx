@@ -1,14 +1,14 @@
-// src/app/order-history/page.tsx
 import React from "react";
 import OrderHistory from "../components/OrderHistory";
 
-// Example customerId, replace with dynamic data as needed
-const customerId = "exampleCustomerId"; // Replace with actual customer ID logic
-
-export default function Page() {
+const OrderHistoryPage: React.FC = () => {
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <OrderHistory customerId={customerId} />
+    <div className="max-w-4xl mx-auto px-4 py-8 pt-20">
+      {" "}
+      {/* Added pt-20 to add padding at the top */}
+      <OrderHistory />
     </div>
   );
-}
+};
+
+export default OrderHistoryPage;

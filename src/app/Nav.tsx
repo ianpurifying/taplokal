@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
+
 import Link from "next/link";
 import { auth, fs } from "./firebaseConfig";
 import {
@@ -362,7 +363,12 @@ const Nav = () => {
 
     return () => unsubscribe();
   }, [user]);
-
+  const handleOrderHistoryClick = () => {
+    if (pathname === "/order-history") {
+      // If already on Order History page, refresh the page
+      window.location.reload();
+    }
+  };
   // Display notifications
   useEffect(() => {
     let unsubscribe = () => {};
@@ -488,12 +494,13 @@ const Nav = () => {
             </li>
             <li
               className={`cursor-pointer ${
-                pathname == "/order-history"
+                pathname === "/order-history"
                   ? "font-semibold"
                   : "hover:font-semibold"
               }`}
+              onClick={handleOrderHistoryClick} // Trigger page refresh
             >
-              <Link href={"/order-history"}>Order History</Link>
+              <Link href="/order-history">Order History</Link>
             </li>
           </ul>
           <li
