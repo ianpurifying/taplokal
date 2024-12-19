@@ -88,69 +88,71 @@ const OrderHistory: React.FC = () => {
 
   return (
     <div className="container mx-auto p-4">
-      <h2 className="text-2xl md:text-3xl font-bold text-center text-foreground-primary mb-6">
+      <h2 className="text-2xl md:text-3xl font-bold text-center text-gray-800 mb-6">
         Your Order History
       </h2>
 
       {orders.length > 0 ? (
-        <ul className="space-y-4">
+        <ul className="space-y-6">
           {orders.map((order) => (
             <li
               key={order.id}
-              className="bg-white rounded-lg shadow-md p-4 md:p-6"
+              className="bg-gradient-to-r from-white to-gray-50 border border-gray-200 rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300"
             >
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg md:text-xl font-semibold text-gray-800">
-                  Order ID: {order.id}
+              <div className="flex flex-wrap justify-between items-center mb-4 gap-4">
+                <h3 className="text-lg md:text-xl font-bold text-gray-700">
+                  Order ID: <span className="text-primary">{order.id}</span>
                 </h3>
-                <p>
+                <p className="text-sm md:text-base bg-gray-100 text-gray-800 px-3 py-1 rounded-full">
                   <span className="font-medium">Status:</span> {order.status}
                 </p>
               </div>
 
-              <div className="text-gray-700 mb-4">
-                <p>
+              <div className="text-gray-600 mb-6 space-y-2">
+                <p className="text-sm md:text-base">
                   <span className="font-medium">Date:</span>{" "}
                   {order.createdAt
                     ? new Date(order.createdAt.toDate()).toLocaleString()
                     : "Invalid Date"}
                 </p>
-                <p>
-                  <span className="font-medium">
-                    Order No: {order.orderNumber}
-                  </span>
+                <p className="text-sm md:text-base">
+                  <span className="font-medium">Order No:</span>{" "}
+                  {order.orderNumber}
                 </p>
-
-                <p>
+                <p className="text-sm md:text-base">
                   <span className="font-medium">Table:</span>{" "}
                   {order.tableNumber}
                 </p>
-                <span className="text-sm md:text-base text-gray-600">
+                <span className="block text-xs md:text-sm italic text-gray-500">
                   {order.dineInOrTakeout}
                 </span>
               </div>
 
-              <ul className="border-t border-gray-200 pt-4 space-y-2">
+              <ul className="border-t border-gray-200 pt-4 space-y-3">
                 {order.items.map((item: ItemCart, index: number) => (
-                  <li key={index} className="flex justify-between">
+                  <li
+                    key={index}
+                    className="flex justify-between items-center text-sm md:text-base text-gray-700"
+                  >
                     <div>
-                      <span className="font-medium">{item.name}</span> x{" "}
+                      <span className="font-semibold">{item.name}</span> x{" "}
                       {item.quantity}
                     </div>
-                    <span>₱{(item.price * item.quantity).toFixed(2)}</span>
+                    <span className="text-primary">
+                      ₱{(item.price * item.quantity).toFixed(2)}
+                    </span>
                   </li>
                 ))}
               </ul>
 
-              {/* Optional: Display total price and discount */}
-              <div className="flex justify-end mt-4 text-gray-800">
+              <div className="flex justify-between items-center mt-6 text-gray-800">
                 {order.totalDiscount && (
-                  <p className="text-sm line-through mr-4">
+                  <p className="text-sm md:text-base text-gray-400 line-through">
                     ₱{order.totalDiscount.toFixed(2)}
                   </p>
                 )}
-                <p className="font-semibold">
-                  {/* Calculate total price here */}Total: ₱
+                <p className="text-lg md:text-xl font-bold text-primary">
+                  Total: ₱
                   {order.items
                     .reduce((sum, item) => sum + item.price * item.quantity, 0)
                     .toFixed(2)}
@@ -160,7 +162,9 @@ const OrderHistory: React.FC = () => {
           ))}
         </ul>
       ) : (
-        <p className="text-center text-gray-500 pb-[600px]">No orders found.</p>
+        <p className="text-center text-gray-500 text-lg md:text-xl py-32">
+          No orders found.
+        </p>
       )}
     </div>
   );
